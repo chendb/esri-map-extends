@@ -1,4 +1,4 @@
-import { TrackLine, TrackSegment, TrackSegmentOptions } from './egova-track.model'
+import { TrackLine, TrackSegment, TrackSegmentOptions } from './egova.model'
 import { EgovaFeatureLayer, EgovaGroupLayer } from './egova.layer';
 import { EgovaMap } from './egova.map';
 import { MapUtils } from './map.utils';
@@ -6,7 +6,7 @@ import { MapUtils } from './map.utils';
 declare var esri: any;
 declare var dojo: any;
 
-export class EgovaMapRouteOptions {
+export class EgovaRouteOptions {
 
     public lineStartEvent: Function;
 
@@ -66,7 +66,7 @@ export class EgovaMapRouteOptions {
 
 }
 
-export class EgovaMapRoute {
+export class EgovaRoute {
 
     public moveLineLayer: any;
     public moveMarkLayer: any;
@@ -75,7 +75,7 @@ export class EgovaMapRoute {
 
     constructor(public egovaMap: EgovaMap
         , public layerName: string
-        , public options: EgovaMapRouteOptions) {
+        , public options: EgovaRouteOptions) {
 
 
         // 轨迹线路
@@ -363,21 +363,21 @@ export class EgovaMapRoute {
      */
     private post(index: number, name: string, start: any, end: any, lineOptions: TrackSegmentOptions, waypoints?: any[]) {
 
-        const egovaMapRoute = this;
+        const EgovaRoute = this;
 
         const trackSegmentOptions = new TrackSegmentOptions(lineOptions.numsOfKilometer, lineOptions.speed, lineOptions.autoShowLine);
 
         trackSegmentOptions.showSegmentLineEvent = function (segment: TrackSegment) {
-            egovaMapRoute.onShowSegmentLineEvent(egovaMapRoute, segment, lineOptions);
+            EgovaRoute.onShowSegmentLineEvent(EgovaRoute, segment, lineOptions);
         }
         trackSegmentOptions.moveStartEvent = function (segment: TrackSegment, graphic: any, angle: number) {
-            egovaMapRoute.onMoveStartEvent(egovaMapRoute, segment, graphic, angle);
+            EgovaRoute.onMoveStartEvent(EgovaRoute, segment, graphic, angle);
         }
         trackSegmentOptions.moveEvent = function (segment: TrackSegment, point: any, angle: number) {
-            egovaMapRoute.onMoveEvent(egovaMapRoute, segment, point, angle);
+            EgovaRoute.onMoveEvent(EgovaRoute, segment, point, angle);
         }
         trackSegmentOptions.moveEndEvent = function (segment: TrackSegment, graphic: any, angle: number) {
-            egovaMapRoute.onMoveEndEvent(egovaMapRoute, segment, graphic, angle);
+            EgovaRoute.onMoveEndEvent(EgovaRoute, segment, graphic, angle);
         }
 
         const segment = new TrackSegment(index, name, start, end, trackSegmentOptions);
@@ -404,7 +404,7 @@ export class EgovaMapRoute {
      * @param {*} start 起点要素
      * @param {*} end 终点要素
      * @param {any[]} [waypoints] 途经要素点
-     * @memberof EgovaMapRoute
+     * @memberof EgovaRoute
      */
     private solveByNA(segment: TrackSegment, start: any, end: any, waypoints?: any[]) {
         const routeTask = new esri.tasks.RouteTask(this.options.routeUrl);
@@ -415,12 +415,12 @@ export class EgovaMapRoute {
         routeParams.directionsLengthUnits = esri.Units.MILES;
         routeParams.outSpatialReference = new esri.SpatialReference({ wkid: this.egovaMap.spatial.wkid });
 
-        const egovaMapRoute = this;
+        const EgovaRoute = this;
         routeTask.on("solve-complete", function (evt: any) {
-            egovaMapRoute.solveComplete(egovaMapRoute, evt, segment);
+            EgovaRoute.solveComplete(EgovaRoute, evt, segment);
         });
         routeTask.on("error", function (err: any) {
-            egovaMapRoute.errorHandler(egovaMapRoute, err, segment);
+            EgovaRoute.errorHandler(EgovaRoute, err, segment);
         });
         // 起点
         routeParams.stops.features.push(this.cloneStopGraphic(start));
@@ -457,7 +457,7 @@ export class EgovaMapRoute {
     /**
      * 路由分析完成回调
      */
-    private solveComplete(mapRoute: EgovaMapRoute, evt: any, segment: TrackSegment) {
+    private solveComplete(mapRoute: EgovaRoute, evt: any, segment: TrackSegment) {
         const routeResult = evt.result.routeResults[0];
         const polyline = routeResult.route.geometry;
         const length = routeResult.directions.totalLength;
@@ -468,7 +468,7 @@ export class EgovaMapRoute {
     /**
      * 路由分析失败回调
      */
-    private errorHandler(mapRoute: EgovaMapRoute, err: any, segment: TrackSegment) {
+    private errorHandler(mapRoute: EgovaRoute, err: any, segment: TrackSegment) {
         console.log("路由分析异常" + err + "");
         const points = [];
         points.push(segment.startGraphic.geometry);
@@ -533,13 +533,13 @@ export class EgovaMapRoute {
      * 显示路段事件
      * 
      * @protected
-     * @memberof EgovaMapRoute
+     * @memberof EgovaRoute
      */
-    protected onShowSegmentLineEvent(egovaMapRoute: EgovaMapRoute, segment: TrackSegment, lineOptions: any) {
+    protected onShowSegmentLineEvent(EgovaRoute: EgovaRoute, segment: TrackSegment, lineOptions: any) {
         // 是否自动显示轨迹
         if (lineOptions.autoShowSegmentLine) {
             if (!segment.lineGraphic) {
-                egovaMapRoute.showSegmentLine(segment);
+                EgovaRoute.showSegmentLine(segment);
             }
         }
         if (lineOptions.onShowSegmentLineEvent) {
@@ -550,65 +550,65 @@ export class EgovaMapRoute {
     /**
      * 线段播放开始事故
      */
-    protected onMoveStartEvent(egovaMapRoute: EgovaMapRoute, segment: TrackSegment, graphic: any, angle: number) {
-        var trackline = egovaMapRoute.getTrackLine(segment.name);
+    protected onMoveStartEvent(EgovaRoute: EgovaRoute, segment: TrackSegment, graphic: any, angle: number) {
+        var trackline = EgovaRoute.getTrackLine(segment.name);
 
         if (trackline == undefined) {
             return;
         }
 
         if (!trackline.markerGraphic) {
-            var mg = egovaMapRoute.getMarkerGraphic(trackline, graphic, angle);
+            var mg = EgovaRoute.getMarkerGraphic(trackline, graphic, angle);
             trackline.markerGraphic = mg;
-            egovaMapRoute.moveMarkLayer.add(mg);
+            EgovaRoute.moveMarkLayer.add(mg);
 
             if (trackline.markerLabel) {
-                var text = egovaMapRoute.getMarkerLabelGraphic(trackline, graphic, angle);
-                var bg = egovaMapRoute.getMarkerLabelBackGroundGraphic(trackline, graphic, angle);
+                var text = EgovaRoute.getMarkerLabelGraphic(trackline, graphic, angle);
+                var bg = EgovaRoute.getMarkerLabelBackGroundGraphic(trackline, graphic, angle);
                 trackline.markerLabelGraphic = text;
-                egovaMapRoute.moveLabelLayer.addGraphice(trackline.name, [text, bg]);
+                EgovaRoute.moveLabelLayer.addGraphice(trackline.name, [text, bg]);
             }
         }
-        egovaMapRoute.egovaMap.centerAt(graphic.geometry.x, graphic.geometry.y);
+        EgovaRoute.egovaMap.centerAt(graphic.geometry.x, graphic.geometry.y);
 
         if (!segment.lineGraphic) {
-            egovaMapRoute.showSegmentLine(segment);
+            EgovaRoute.showSegmentLine(segment);
         }
 
 
-        egovaMapRoute.options.onStationEvent(segment.name, segment.index, graphic, true, egovaMapRoute.getTrackLine(segment.name));
+        EgovaRoute.options.onStationEvent(segment.name, segment.index, graphic, true, EgovaRoute.getTrackLine(segment.name));
         if (segment.index == 0) {
             // 线路播放开始事故回调
-            this.options.onLineStartEvent(segment.name, segment.index, egovaMapRoute.getTrackLine(segment.name));
+            this.options.onLineStartEvent(segment.name, segment.index, EgovaRoute.getTrackLine(segment.name));
         }
     }
 
     /**
      * 线段播放完成事件
      */
-    protected onMoveEndEvent(egovaMapRoute: EgovaMapRoute, segment: TrackSegment, graphic: any, angle: number) {
-        const nextSegment = egovaMapRoute.getNextSegment(segment.name, segment.index);
-        const currentLine = egovaMapRoute.getTrackLine(segment.name);
+    protected onMoveEndEvent(EgovaRoute: EgovaRoute, segment: TrackSegment, graphic: any, angle: number) {
+        const nextSegment = EgovaRoute.getNextSegment(segment.name, segment.index);
+        const currentLine = EgovaRoute.getTrackLine(segment.name);
         if (nextSegment) {
-            egovaMapRoute.options.onStationEvent(segment.name, segment.index, graphic, false, currentLine);
+            EgovaRoute.options.onStationEvent(segment.name, segment.index, graphic, false, currentLine);
             // 到达站点
             nextSegment.start();
         } else {
-            egovaMapRoute.options.onStationEvent(segment.name, segment.index, graphic, false, currentLine);
+            EgovaRoute.options.onStationEvent(segment.name, segment.index, graphic, false, currentLine);
             segment.stop();
             // 如果没有下一条线路，说明线路播放结束，此时调用线路播放结束回调
-            egovaMapRoute.options.onLineEndEvent(segment.name, segment.index, currentLine);
+            EgovaRoute.options.onLineEndEvent(segment.name, segment.index, currentLine);
         }
     }
     /**
      * 移动回调事件
      */
-    protected onMoveEvent(egovaMapRoute: EgovaMapRoute, segment: TrackSegment, xy: any[], angle: number) {
-        var point = new esri.geometry.Point(parseFloat(xy[0]), parseFloat(xy[1]), egovaMapRoute.egovaMap.spatial)
-        var trackline = egovaMapRoute.getTrackLine(segment.name);
-        egovaMapRoute.changeMovingGraphicSymbol(trackline, point, angle);
+    protected onMoveEvent(EgovaRoute: EgovaRoute, segment: TrackSegment, xy: any[], angle: number) {
+        var point = new esri.geometry.Point(parseFloat(xy[0]), parseFloat(xy[1]), EgovaRoute.egovaMap.spatial)
+        var trackline = EgovaRoute.getTrackLine(segment.name);
+        EgovaRoute.changeMovingGraphicSymbol(trackline, point, angle);
 
-        egovaMapRoute.options.onMoveEvent(segment.name, segment.index, xy, angle);
+        EgovaRoute.options.onMoveEvent(segment.name, segment.index, xy, angle);
     }
 
     public cloneStopGraphic(graphic: any) {

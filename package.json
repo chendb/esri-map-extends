@@ -1,6 +1,6 @@
 {
   "name": "esri-map-extends",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "基于esri地图扩展应用",
   "main": "dist/lib/index.js",
   "types":"dist/lib/index.d.js",
